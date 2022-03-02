@@ -1,0 +1,6 @@
+[submodule "deps"]
+	path = deps
+	url = https://github.com/truenotzero/everest-test.git
+[submodule "everest-test"]
+	path = everest-test
+	url = https://github.com/truenotzero/everest-test
