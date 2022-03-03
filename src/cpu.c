@@ -5,8 +5,25 @@
 #include <stdio.h>
 
 enum zeus_op {
+  // Add with carry
   ADC_IMM = 0x69,
+
 };
+
+/*static bool is_arithmetic_op(uint8_t op) {
+  static uint8_t const masks[] = {
+      0x01, 0x05, 0x09, 0x0D, 0x11, 0x15, 0x19, 0x1D,
+  };
+  uint8_t const *mask = 0;
+  for (size_t i = 0; i < sizeof(masks) / sizeof(*masks); ++i) {
+    if (op & masks[i]) {
+      mask = &masks[i];
+      return true;
+    }
+  }
+
+  return false;
+}*/
 
 uint16_t zeus_read16(void const *loc) {
   char const *p = loc;
@@ -69,7 +86,80 @@ static struct add_check_overflow_t {
   return ret;
 }
 
+enum op_type {
+  Z_OP_TYPE_CONTROL,
+  Z_OP_TYPE_ARITHMETIC,
+  Z_OP_TYPE_RMW,
+  Z_OP_TYPE_UNOFFICIAL,
+};
+
+static enum op_type decode_type(uint8_t op) {
+  switch (op & 0x1F) {
+  case 0x00:
+  case 0x04:
+  case 0x08:
+  case 0x0C:
+  case 0x10:
+  case 0x14:
+  case 0x18:
+  case 0x1C:
+    return Z_OP_TYPE_CONTROL;
+
+  case 0x01:
+  case 0x05:
+  case 0x09:
+  case 0x0D:
+  case 0x11:
+  case 0x15:
+  case 0x19:
+  case 0x1D:
+    return Z_OP_TYPE_ARITHMETIC;
+
+  case 0x02:
+  case 0x06:
+  case 0x0A:
+  case 0x0E:
+  case 0x12:
+  case 0x16:
+  case 0x1A:
+  case 0x1E:
+    return Z_OP_TYPE_RMW;
+
+  case 0x03:
+  case 0x07:
+  case 0x0B:
+  case 0x0F:
+  case 0x13:
+  case 0x17:
+  case 0x1B:
+  case 0x1F:
+    return Z_OP_TYPE_UNOFFICIAL;
+  }
+
+  return *(enum op_type volatile *)0;
+}
+
+// arithmetic.c
+extern void zeus_exec_arithmetic(struct zeus_cpu *cpu, uint8_t op);
+
 void zeus_exec(struct zeus_cpu *cpu) {
+  // fetch
+  enum zeus_op op = cpu->bus.raw[cpu->registers.pc];
+
+  // decode
+  switch (decode_type(op)) {
+  case Z_OP_TYPE_CONTROL:
+    break;
+  case Z_OP_TYPE_ARITHMETIC:
+    zeus_exec_arithmetic(cpu, op);
+    break;
+  case Z_OP_TYPE_RMW:
+    break;
+  case Z_OP_TYPE_UNOFFICIAL:
+    break;
+  };
+
+  /*
   // fetch
   enum zeus_op op = cpu->bus.raw[cpu->registers.pc];
   uint8_t imm = cpu->bus.raw[cpu->registers.pc + 1];
@@ -101,4 +191,5 @@ void zeus_exec(struct zeus_cpu *cpu) {
     }
   } break;
   }
+  */
 }

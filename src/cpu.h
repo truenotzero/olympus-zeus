@@ -7,6 +7,9 @@
 #define ZEUS_ZERO_PAGE_SIZE 0x100
 #define ZEUS_STACK_SIZE 0x100
 
+#define zeus_p_noreturn(t) *(t volatile *)0
+#define zeus_p_unused(p) (void)p
+
 struct zeus_regs {
   uint16_t pc; // program counter
   uint8_t sp;  // stack pointer
